@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HVR - Hybrid Video Recorder</title>
+  <style>
+    :root {
+      --bg-dark: #0b131e;
+      --card-bg: #111a28;
+      --sidebar-bg: #0e1622;
+      --accent-blue: #2589ff;
+      --accent-blue-hover: #1d72d8;
+      --border-color: #1e2d42;
+      --text-main: #ffffff;
+      --text-muted: #8b9bb4;
+      --status-green: #00d26a;
+      --status-red: #f83b54;
+      --input-bg: #090f17;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Screen Management */
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* LOGIN SCREEN */
+    #login-screen {
+      justify-content: center;
+      align-items: center;
+      background-color: var(--bg-dark);
+      position: relative;
+    }
+
+    .login-container {
+      display: flex;
+      align-items: center;
+      gap: 60px;
+    }
+
+    .login-illustration {
+      width: 250px;
+      opacity: 0.3;
+    }
+
+    .login-box {
+      background-color: var(--card-bg);
+      padding: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      width: 380px;
+      text-align: center;
+    }
+
+    .login-box h1 {
+      font-size: 2.5rem;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    .login-box p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 25px;
+    }
+
+    .login-box p.instruction {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input, .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    .input-wrapper input:focus, .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--accent-blue);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-blue-hover);
+    }
+
+    .version-tag {
+      position: absolute;
+      bottom: 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* DASHBOARD LAYOUT */
+    .sidebar {
+      width: 240px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 0 10px;
+    }
+
+    .nav-item {
+      padding: 12px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background-color: var(--accent-blue);
+      color: white;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background-color: var(--bg-dark);
+    }
+
+    .topbar {
+      height: 60px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0 30px;
+      gap: 15px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .user-info {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .logout-btn {
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .content-area {
+      padding: 30px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .page-title {
+      font-size: 1.4rem;
+      margin-bottom: 20px;
+    }
+
+    /* TABLES */
+    .table-container {
+      background-color: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .action-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .btn-add {
+      background-color: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot.connected { background-color: var(--status-green); color: var(--status-green); }
+    .dot.disconnected { background-color: var(--status-red); color: var(--status-red); }
+
+    .status-connected { color: var(--status-green); }
+    .status-disconnected { color: var(--status-red); }
+
+    .actions-cell button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    .actions-cell button:hover {
+      color: white;
+    }
+
+    /* CONFIG FORM */
+    .config-section {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .config-section h3 {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      color: var(--text-main);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .form-grid label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: 450px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      background-color: #3a4b63;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <svg class="login-illustration" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" color="#2589ff">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+        <circle cx="12" cy="13" r="4"></circle>
+      </svg>
+      <div class="login-box">
+        <h1>HVR</h1>
+        <p class="subtitle">Hybrid Video Recorder</p>
+        <p class="instruction">Inicia sesión para acceder al panel de control</p>
+        
+        <form id="login-form">
+          <div class="form-group">
+            <input type="text" id="username" id="username" value="admin" placeholder="Usuario" required>
+          </div>
+          <div class="form-group">
+            <input type="password" id="password" id="password" value="••••••••" placeholder="Contraseña" required>
+          </div>
+          <button type="submit" id="btn-login" class="btn-primary">Iniciar sesión</button>
+        </form>
+      </div>
+    </div>
+    <div class="version-tag">HVR v1.0</div>
+  </div>
+
+  <!-- 2. MAIN APP SCREEN -->
+  <div id="app-screen" class="screen">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">HVR</div>
+      <ul class="nav-menu">
+        <li class="nav-item" id="nav-inicio" onclick="showTab('inicio')">Inicio</li>
+        <li class="nav-item" id="nav-config" onclick="showTab('config')">Configuración del HVR</li>
+        <li class="nav-item active" id="nav-canales" onclick="showTab('canales')">Lista de canales</li>
+        <li class="nav-item" onclick="openModal()">+ Agregar cámara</li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="topbar">
+        <span class="user-info">Admin ▾</span>
+        <span class="logout-btn" id="logout-btn" onclick="logout()" title="Cerrar sesión">↪</span>
+      </div>
+
+      <div class="content-area">
+        
+        <!-- TAB: LISTA DE CANALES -->
+        <div id="tab-canales" class="tab-content">
+          <div class="action-header">
+            <h2 class="page-title">Lista de canales</h2>
+            <button class="btn-add" id="btn-open-add-modal" onclick="openModal()">+ Agregar cámara</button>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Canal</th>
+                  <th>IP de cámara</th>
+                  <th>Usuario</th>
+                  <th>Contraseña</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="channels-table-body">
+                <!-- Se poblará por Javascript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB: CONFIGURACION -->
+        <div id="tab-config" class="tab-content" style="display: none;">
+          <h2 class="page-title">Configuración del HVR</h2>
+          
+          <div class="config-section">
+            <h3>Red</h3>
+            <div class="form-grid">
+              <label for="hvr-ip">IP del HVR</label>
+              <input type="text" id="hvr-ip" value="192.168.1.100">
+            </div>
+            <div class="form-grid">
+              <label for="hvr-netmask">Máscara de subred</label>
+              <input type="text" id="hvr-netmask" value="255.255.255.0">
+            </div>
+            <div class="form-grid">
+              <label for="hvr-gateway">Puerta de enlace</label>
+              <input type="text" id="hvr-gateway" value="192.168.1.1">
+            </div>
+            <div class="form-grid">
+              <label for="hvr-dns">DNS</label>
+              <input type="text" id="hvr-dns" value="8.8.8.8">
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3>Fecha y hora</h3>
+            <div class="form-grid">
+              <label for="hvr-timezone">Zona horaria</label>
+              <select id="hvr-timezone">
+                <option>(UTC-05:00) Bogotá, Lima, Quito</option>
+                <option>(UTC−06:00) Central Standard Time</option>                
+              </select>
+            </div>
+            <div class="form-grid">
+              <label for="hvr-date">Fecha</label>
+              <input type="date" id="hvr-date" value="2025-06-21">
+            </div>
+            <div class="form-grid">
+              <label for="hvr-time">Hora</label>
+              <input type="time" id="hvr-time" value="14:32:00">
+            </div>
+          </div>
+
+          <div class="config-section">
+            <h3>Otras configuraciones</h3>
+            <div class="form-grid">
+              <label for="hvr-rec-type">Tipo de grabación</label>
+              <select id="hvr-rec-type">
+                <option>Continua</option>
+                <option>Por Movimiento</option>
+              </select>
+            </div>
+            <div class="form-grid">
+              <label for="hvr-retention">Tiempo de retención (días)</label>
+              <input type="number" id="hvr-retention" value="30">
+            </div>
+          </div>
+
+          <button class="btn-primary" id="btn-save-config" style="width: auto; padding: 10px 20px;">Guardar configuración</button>
+        </div>
+
+        <!-- TAB: INICIO (PLACEHOLDER) -->
+        <div id="tab-inicio" class="tab-content" style="display: none;">
+          <h2 class="page-title">Inicio</h2>
+          <p style="color: var(--text-muted);">Panel principal de vista previa (Sin transmisión activa).</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL (VENTANA FLOTANTE PARA AGREGAR CÁMARA) -->
+  <div class="modal-overlay" id="camera-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Agregar cámara</h3>
+        <button class="close-btn" id="btn-close-modal" onclick="closeModal()">✕</button>
+      </div>
+      <form id="add-camera-form">
+        <div class="form-group">
+          <label style="display:block; margin-bottom:5px; color:var(--text-muted); font-size:0.85rem;">IP de cámara</label>
+          <input type="text" id="modal-cam-ip" placeholder="Ej: 192.168.1.20" required>
+        </div>
+        <div class="form-group">
+          <label style="display:block; margin-bottom:5px; color:var(--text-muted); font-size:0.85rem;">Usuario</label>
+          <input type="text" id="modal-cam-user" placeholder="Usuario de la cámara" required>
+        </div>
+        <div class="form-group">
+          <label style="display:block; margin-bottom:5px; color:var(--text-muted); font-size:0.85rem;">Contraseña</label>
+          <input type="password" id="modal-cam-pass" placeholder="Contraseña de la cámara" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="btn-cancel-modal" onclick="closeModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btn-save-camera" style="width:auto;">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ESTADO INICIAL
+    let channels = [
+      { id: 1, name: "Canal 1", ip: "192.168.1.10", user: "admin", pass: "•••••", connected: true },
+      { id: 2, name: "Canal 2", ip: "192.168.1.11", user: "admin", pass: "•••••", connected: true },
+      { id: 3, name: "Canal 3", ip: "192.168.1.12", user: "admin", pass: "•••••", connected: false },
+      { id: 4, name: "Canal 4", ip: "192.168.1.13", user: "user",  pass: "•••••", connected: true },
+      { id: 5, name: "Canal 5", ip: "192.168.1.14", user: "admin", pass: "•••••", connected: true },
+      { id: 6, name: "Canal 6", ip: "192.168.1.15", user: "admin", pass: "•••••", connected: false },
+      { id: 7, name: "Canal 7", ip: "192.168.1.16", user: "admin", pass: "•••••", connected: true },
+      { id: 8, name: "Canal 8", ip: "192.168.1.17", user: "admin", pass: "•••••", connected: true },
+    ];
+
+    // MANEJO DE SESIÓN
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      document.getElementById('login-screen').classList.remove('active');
+      document.getElementById('app-screen').classList.add('active');
+      renderChannels();
+    });
+
+    function logout() {
+      document.getElementById('app-screen').classList.remove('active');
+      document.getElementById('login-screen').classList.add('active');
+    }
+
+    // NAVEGACIÓN
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+      document.getElementById(`tab-${tabName}`).style.display = 'block';
+      const activeNav = document.getElementById(`nav-${tabName}`);
+      if(activeNav) activeNav.classList.add('active');
+    }
+
+    // RENDERIZADO DE TABLA
+    function renderChannels() {
+      const tbody = document.getElementById('channels-table-body');
+      tbody.innerHTML = '';
+
+      channels.forEach((ch) => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-id', ch.id);
+        
+        const statusClass = ch.connected ? 'status-connected' : 'status-disconnected';
+        const dotClass = ch.connected ? 'connected' : 'disconnected';
+        const statusText = ch.connected ? 'Conectada' : 'Desconectada';
+
+        tr.innerHTML = `
+          <td>📹 ${ch.name}</td>
+          <td>${ch.ip}</td>
+          <td>${ch.user}</td>
+          <td>${ch.pass}</td>
+          <td>
+            <div class="status-badge ${statusClass}">
+              <span class="dot ${dotClass}"></span> ${statusText}
+            </div>
+          </td>
+          <td class="actions-cell">
+            <button class="btn-delete" onclick="deleteChannel(${ch.id})" title="Eliminar">Eliminar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // MODAL HANDLERS
+    function openModal() {
+      document.getElementById('camera-modal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('camera-modal').classList.remove('active');
+      document.getElementById('add-camera-form').reset();
+    }
+
+    // AGREGAR CÁMARA
+    document.getElementById('add-camera-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const ip = document.getElementById('modal-cam-ip').value;
+      const user = document.getElementById('modal-cam-user').value;
+      const pass = document.getElementById('modal-cam-pass').value;
+
+      const newId = channels.length + 1;
+      channels.push({
+        id: newId,
+        name: `Canal ${newId}`,
+        ip: ip,
+        user: user,
+        pass: "•••••",
+        connected: true
+      });
+
+      renderChannels();
+      closeModal();
+    });
+
+    // ACCIONES DE TABLA
+    function deleteChannel(id) {
+      channels = channels.filter(ch => ch.id !== id);
+      renderChannels();
+    }
+
+    function editChannel(id) {
+      const item = channels.find(ch => ch.id === id);
+      if(item) {
+        const newIp = prompt("Editar IP del Canal:", item.ip);
+        if(newIp) {
+          item.ip = newIp;
+          renderChannels();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
